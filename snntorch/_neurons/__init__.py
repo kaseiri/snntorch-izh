@@ -18,6 +18,7 @@ __neuron__ = [
     "synaptic",
     "sconv2dlstm",
     "slstm",
+    "izhikevich",
 ]
 
 from .neurons import SpikingNeuron
@@ -34,3 +35,5 @@ from .sconv2dlstm import SConv2dLSTM
 from .slstm import SLSTM
 
 from .leakyparallel import LeakyParallel
+
+from .izhikevich import Izhikevich
