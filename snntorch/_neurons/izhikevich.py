@@ -1,4 +1,5 @@
 import torch
+import torch.nn as nn
 from .neurons import SpikingNeuron
 
 
@@ -6,7 +7,7 @@ class Izhikevich(SpikingNeuron):
     def __init__(
         self,
         a=0.02,
-        b=2.0,
+        b=0.2,
         c=-65,
         d=8.0,  # excitatory, 2 for inhibitory
         mem_rest=-70,
@@ -58,6 +59,7 @@ class Izhikevich(SpikingNeuron):
         self.register_buffer("u", u, False)
 
     def reset_mem(self):
+        # TODO return reversal potential instead of u
         self.mem = torch.full_like(self.mem, self.mem_rest, device=self.mem.device)
         self.u = torch.full_like(self.u, self.u_rest, device=self.u.device)
         return self.mem, self.u
@@ -90,7 +92,16 @@ class Izhikevich(SpikingNeuron):
         # Calculate updates only for neurons that are not resetting
         not_resetting = self.reset == 0
         if not_resetting.any():
-            dmem = 0.04 * temp_mem[not_resetting]**2 + 5 * temp_mem[not_resetting] + 140 - temp_u[not_resetting] + input_[not_resetting]
+            # first half of timestep
+            dmem = (0.04 * temp_mem[not_resetting]**2 + 5 * temp_mem[not_resetting]
+                    + 140 - temp_u[not_resetting] + input_[not_resetting])
+            du = self.a * (self.b * temp_mem[not_resetting] - temp_u[not_resetting])
+            temp_mem[not_resetting] += self.dt * dmem
+            temp_u[not_resetting] += self.dt * du
+
+            # second half of timestep
+            dmem = (0.04 * temp_mem[not_resetting]**2 + 5 * temp_mem[not_resetting]
+                    + 140 - temp_u[not_resetting] + input_[not_resetting])
             du = self.a * (self.b * temp_mem[not_resetting] - temp_u[not_resetting])
             temp_mem[not_resetting] += self.dt * dmem
             temp_u[not_resetting] += self.dt * du
@@ -105,24 +116,3 @@ class Izhikevich(SpikingNeuron):
         # Update the actual class variables after all calculations
         self.mem = temp_mem
         self.u = temp_u
-
-#    def update_izhikevich(self, input_, mem, u):
-#        # first half of time step
-#        dmem = 0.04 * mem**2 + 5 * mem + 140 - self.u + input_
-#        du = self.a * (self.b * mem - self.u)
-#        mem = mem + self.dt * dmem
-#        u = u + self.dt * du
-#
-#        # second half of time step
-#        dmem = 0.04 * mem**2 + 5 * mem + 140 - self.u + input_
-#        du = self.a * (self.b * mem - self.u)
-#        mem = mem + self.dt * dmem
-#        u = u + self.dt * du
-#
-#        # reset
-#        mem = torch.where(self.reset > 0, torch.full_like(mem, self.c), mem)
-#        u = torch.where(self.reset > 0, u + self.d, u)
-#
-#        # clamp membrane potential to threshold
-#        mem = torch.clamp(mem, max=self.threshold+0.01)
-#        return mem, u
