@@ -5,21 +5,20 @@ import torch.nn.utils.parametrize as P
 
 
 class Synapses(nn.Module):
-    def __init__(self, num_inputs, num_outputs, tau, inhibitory_percentage=0):
+    def __init__(self, num_inputs, num_outputs, tau):
         super().__init__()
         self.tau = tau
         self.syn = None
-
         self.weights = nn.Parameter(torch.empty(num_inputs, num_outputs))
         nn.init.uniform_(self.weights, a=0, b=0.01)
+        print("pre", self.weights)
         P.register_parametrization(self, "weights", PositiveWeights())
-
-        self.rev = nn.Parameter(-85 * (inhibitory_percentage > torch.rand(num_inputs)).float(), requires_grad=False)
+        print("post", self.weights)
 
     def reset_syn(self):
         self.syn = None
 
-    def forward(self, in_spikes, mem):
+    def forward(self, in_spikes, mem, rev):
         if self.syn is None or self.syn.size(0) != in_spikes.size(0):
             self.syn = torch.zeros(in_spikes.size(0), in_spikes.size(1),
                                    self.weights.size(1), device=in_spikes.device)
@@ -29,7 +28,7 @@ class Synapses(nn.Module):
         self.syn = self.syn * decay_factor + spike_contribution
 
         conductivity = self.syn * self.weights.unsqueeze(0)
-        voltage = self.rev.unsqueeze(0).unsqueeze(-1) - mem.unsqueeze(1)
+        voltage = rev.unsqueeze(2) - mem.unsqueeze(1)
         current = conductivity * voltage
 
         return current.sum(dim=1)

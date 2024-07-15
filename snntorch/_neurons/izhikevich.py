@@ -55,7 +55,6 @@ class Izhikevich(SpikingNeuron):
     def _init_mem(self):
         mem = torch.zeros(0)
         u = torch.zeros(0)
-        neuron_types = torch.zeros(0)
         self.register_buffer("mem", mem, False)
         self.register_buffer("u", u, False)
 
