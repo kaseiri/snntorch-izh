@@ -1,7 +1,5 @@
-import math
 import torch
 import torch.nn as nn
-import torch.nn.utils.parametrize as P
 
 
 class Synapses(nn.Module):
@@ -9,11 +7,7 @@ class Synapses(nn.Module):
         super().__init__()
         self.tau = tau
         self.syn = None
-        self.weights = nn.Parameter(torch.empty(num_inputs, num_outputs))
-        nn.init.uniform_(self.weights, a=0, b=0.01)
-        print("pre", self.weights)
-        P.register_parametrization(self, "weights", PositiveWeights())
-        print("post", self.weights)
+        self.weights = nn.Parameter(0.1 * (2 * torch.rand(num_inputs, num_outputs) - 1))
 
     def reset_syn(self):
         self.syn = None
@@ -32,9 +26,3 @@ class Synapses(nn.Module):
         current = conductivity * voltage
 
         return current.sum(dim=1)
-
-
-class PositiveWeights(nn.Module):
-    def forward(self, X):
-        #return X.exp()
-        return torch.clamp(X, min=0)
