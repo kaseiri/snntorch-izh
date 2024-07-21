@@ -12,7 +12,7 @@ class Synapses(nn.Module):
     def reset_syn(self):
         self.syn = None
 
-    def forward(self, in_spikes, mem, rev):
+    def forward(self, in_spikes, mem):
         if self.syn is None or self.syn.size(0) != in_spikes.size(0):
             self.syn = torch.zeros(in_spikes.size(0), in_spikes.size(1),
                                    self.weights.size(1), device=in_spikes.device)
@@ -22,7 +22,7 @@ class Synapses(nn.Module):
         self.syn = self.syn * decay_factor + spike_contribution
 
         conductivity = self.syn * self.weights.unsqueeze(0)
-        voltage = rev.unsqueeze(2) - mem.unsqueeze(1)
+        voltage = - mem.unsqueeze(1)
         current = conductivity * voltage
 
         return current.sum(dim=1)
