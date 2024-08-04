@@ -19,10 +19,12 @@ __neuron__ = [
     "sconv2dlstm",
     "slstm",
     "izhikevich",
+    "sciz",
 ]
 
 from .neurons import SpikingNeuron
 from .neurons import LIF
+
 from .alpha import Alpha
 from .lapicque import Lapicque
 from .leaky import Leaky
@@ -37,3 +39,4 @@ from .slstm import SLSTM
 from .leakyparallel import LeakyParallel
 
 from .izhikevich import Izhikevich
+from .sciz import SCIZ

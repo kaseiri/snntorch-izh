@@ -236,7 +236,6 @@ class Leaky(LIF):
             return spk, self.mem
 
     def _base_state_function(self, input_):
-        self.mem = torch.clamp(self.mem, max=self.threshold + 1e-4)
         base_fn = self.beta.clamp(0, 1) * self.mem + input_
         return base_fn
 

@@ -163,6 +163,7 @@ def reset(net):
     is_sconv2dlstm = False
     is_slstm = False
     is_izhikevich = False
+    is_sciz = False
 
     _layer_check(net=net)
 
@@ -181,6 +182,7 @@ def _layer_check(net):
     global is_sconv2dlstm
     global is_slstm
     global is_izhikevich
+    global is_sciz
 
     for layer in net:
         is_lapicque = isinstance(layer, snn.Lapicque)
@@ -192,6 +194,7 @@ def _layer_check(net):
         is_sconv2dlstm = isinstance(layer, snn.SConv2dLSTM)
         is_slstm = isinstance(layer, snn.SLSTM)
         is_izhikevich = isinstance(layer, snn.Izhikevich)
+        is_sciz = isinstance(layer, snn.SCIZ)
 
 def _layer_reset():
     """Reset hidden parameters to zero and detach them from
@@ -224,6 +227,9 @@ def _layer_reset():
     if is_izhikevich:
         snn.Izhikevich.reset_hidden()  # reset hidden state according to Izhikevich
         snn.Izhikevich.detach_hidden()
+    if is_sciz:
+        snn.SCIZ.reset_hidden()  # reset hidden state according to Izhikevich
+        snn.SCIZ.detach_hidden()
 
 def _final_layer_check(net):
     """Check class of final layer and return the number of outputs."""
@@ -246,5 +252,7 @@ def _final_layer_check(net):
         return 4
     if isinstance(list(net._modules.values())[-1], snn.Izhikevich):
         return 2
+    if isinstance(list(net._modules.values())[-1], snn.SCIZ):
+        return 3
     else:  # if not from snn, assume from nn with 1 return
         return 1

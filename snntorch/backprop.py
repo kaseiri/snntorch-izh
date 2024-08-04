@@ -153,6 +153,7 @@ def TBPTT(
         utils.is_sconv2dlstm: snn.SConv2dLSTM,
         utils.is_slstm: snn.SLSTM,
         utils.is_izhikevich: snn.Izhikevich,
+        utils.is_sciz: snn.SCIZ,
     }
 
     # element 1: if true: spk, if false, mem
