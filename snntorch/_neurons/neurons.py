@@ -45,6 +45,7 @@ class SpikingNeuron(nn.Module):
         super().__init__()
 
         SpikingNeuron.instances.append(self)
+        print(f"Added {self} to instances: {SpikingNeuron.instances}.")
 
         if surrogate_disable:
             self.spike_grad = self._surrogate_bypass

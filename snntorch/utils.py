@@ -182,26 +182,16 @@ def _layer_check(net):
     global is_slstm
     global is_izhikevich
 
-    for idx in range(len(list(net._modules.values()))):
-        if isinstance(list(net._modules.values())[idx], snn.Lapicque):
-            is_lapicque = True
-        if isinstance(list(net._modules.values())[idx], snn.Synaptic):
-            is_synaptic = True
-        if isinstance(list(net._modules.values())[idx], snn.Leaky):
-            is_leaky = True
-        if isinstance(list(net._modules.values())[idx], snn.Alpha):
-            is_alpha = True
-        if isinstance(list(net._modules.values())[idx], snn.RLeaky):
-            is_rleaky = True
-        if isinstance(list(net._modules.values())[idx], snn.RSynaptic):
-            is_rsynaptic = True
-        if isinstance(list(net._modules.values())[idx], snn.SConv2dLSTM):
-            is_sconv2dlstm = True
-        if isinstance(list(net._modules.values())[idx], snn.SLSTM):
-            is_slstm = True
-        if isinstance(list(net._modules.values())[idx], snn.Izhikevich):
-            is_izhikevich = True
-
+    for layer in net:
+        is_lapicque = isinstance(layer, snn.Lapicque)
+        is_synaptic = isinstance(layer, snn.Synaptic)
+        is_leaky = isinstance(layer, snn.Leaky)
+        is_alpha = isinstance(layer, snn.Alpha)
+        is_rleaky = isinstance(layer, snn.RLeaky)
+        is_rsynaptic = isinstance(layer, snn.RSynaptic)
+        is_sconv2dlstm = isinstance(layer, snn.SConv2dLSTM)
+        is_slstm = isinstance(layer, snn.SLSTM)
+        is_izhikevich = isinstance(layer, snn.Izhikevich)
 
 def _layer_reset():
     """Reset hidden parameters to zero and detach them from
@@ -232,7 +222,7 @@ def _layer_reset():
         snn.SLSTM.reset_hidden()  # reset hidden state to 0's
         snn.SLSTM.detach_hidden()
     if is_izhikevich:
-        snn.Izhikevich.reset_hidden()  # reset hidden state to 0's
+        snn.Izhikevich.reset_hidden()  # reset hidden state according to Izhikevich
         snn.Izhikevich.detach_hidden()
 
 def _final_layer_check(net):
