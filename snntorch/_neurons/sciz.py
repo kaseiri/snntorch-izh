@@ -3,26 +3,52 @@ import torch
 from torch import nn
 
 class SCIZ(SpikingNeuron):
+    # class attribute for neuron types
+    neuron_types = {
+            'RS': {
+                'a1': 1.0, 'a2': -0.210, 'a3': 0.019,
+                'b1': -1.0 / 32.0, 'b2': 1.0 / 32.0, 'b3': 0.0,
+                'c': 0.105, 'd': 0.412,
+                'v_thr': 0.7
+            },
+            'IB': {
+                'a1': 1.0, 'a2': -1/4.0, 'a3': 0.043,
+                'b1': 1.0 / 128.0, 'b2': 1.0 / 64.0, 'b3': 0.0,
+                'c': 0.152, 'd': 0.164,
+                'v_thr': 1.000
+            },
+            'CH': {
+                'a1': 4.0, 'a2': -0.660, 'a3': 0.077,
+                'b1': 1.0 / 128.0, 'b2': 1.0 / 32.0, 'b3': 0.0,
+                'c': 0.158, 'd': 0.295,
+                'v_thr': 0.645
+            }
+        }
+
     def __init__(
         self,
-        threshold=0.7,
+        neuron_type='RS',
         spike_grad=None,
         surrogate_disable=False,
         init_hidden=False,
         output=False,
+        state_quant=None
     ):
-        super().__init__(
-            threshold,
-            spike_grad,
-            surrogate_disable,
-            init_hidden,
-            output,
-        )
-
         # SC-IZ normalized parameters
-        self.a1, self.a2, self.a3 = 1.0, -0.210, 0.019
-        self.b1, self.b2, self.b3 = -1.0 / 32.0, 1.0 / 32.0, 0.0
-        self.c, self.d = 0.105, 0.412
+        self.neuron_type = neuron_type
+
+
+        # set parameters according to neuron type
+        self.__dict__.update(SCIZ.neuron_types[self.neuron_type])
+
+        super().__init__(
+            threshold=self.v_thr,
+            spike_grad=spike_grad,
+            surrogate_disable=surrogate_disable,
+            init_hidden=init_hidden,
+            output=output,
+            state_quant=state_quant
+        )
 
         self._init_mem()
 
@@ -49,25 +75,22 @@ class SCIZ(SpikingNeuron):
             self.mem = torch.zeros_like(input_, device=self.mem.device)
             self.rec = torch.zeros_like(input_, device=self.rec.device)
 
-        # reset previously spiking neurons
-        self.reset = self.mem_reset(self.mem)  # detached reset signal
-        self.mem = self.reset * (-self.mem + self.c - incr_mem)
-        self.rev = self.reset * (self.d - incr_rec)
+        if self.state_quant:
+            self.mem, self.rec = self.state_quant(self.mem), self.state_quant(self.rec)
 
-        # update state
-        scale = 1
         incr_mem = self.a1 * self.mem * self.mem + self.a2 * self.mem - self.a3 * self.rec + input_
         incr_rec = self.b1 * self.mem - self.b2 * self.rec + self.b3
-        self.mem = self.mem + scale * incr_mem
-        self.rev = self.rev + scale * incr_rev
 
-        # spike
+        self.reset = self.mem_reset(self.mem)  # detached reset signal
+        reset_mem = self.reset * (-self.mem + self.c - incr_mem)
+        reset_rec = self.reset * (self.d - incr_rec)
+
+        self.mem = self.mem + incr_mem + reset_mem
+        self.rec = self.rec + incr_rec + reset_rec
+
         spk = self.fire(self.mem)
 
-        # reset currently spiking neurons
-        post_reset = spk - self.reset  # detached reset signal
-        self.mem = post_reset * (-self.mem + self.c - incr_mem)
-        self.rev = post_reset * (self.d - incr_rec)
+        #self.mem = torch.where(spk.bool(), self.threshold + 1e-4, self.mem)
 
         if self.output:
             return spk, self.mem, self.rec
